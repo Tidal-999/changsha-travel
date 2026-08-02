@@ -50,6 +50,9 @@
   .d2{background:linear-gradient(120deg,#16a34a,#15803d);}
   .d3{background:linear-gradient(120deg,#ea580c,#c2410c);}
   .d4{background:linear-gradient(120deg,#7c3aed,#6d28d9);}
+  .d5{background:linear-gradient(120deg,#db2777,#be185d);}
+  .d6{background:linear-gradient(120deg,#0d9488,#0f766e);}
+  .d7{background:linear-gradient(120deg,#64748b,#475569);}
   .day-head .dt{font-size:17px;font-weight:700;letter-spacing:1px;}
   .day-head .ds{font-size:11.5px;opacity:.92;margin-top:1px;}
   .day-head .theme{margin-left:auto;font-size:11.5px;text-align:right;opacity:.95;}
@@ -78,6 +81,24 @@
   .list-row.done .bk-t{text-decoration:line-through;color:var(--mut);}
   .bk-t{flex:1;min-width:0;}
   .bk-u{flex:none;font-size:10px;color:var(--hot);border:1px solid #fca5a5;border-radius:6px;padding:0 5px;}
+  .map-drawer{margin:2px 12px 10px;}
+  .map-drawer summary{cursor:pointer;font-size:12.5px;font-weight:600;color:#475569;padding:7px 10px;background:#f6f1e9;border-radius:9px;list-style:none;user-select:none;}
+  .map-drawer summary::-webkit-details-marker{display:none;}
+  .map-drawer[open] summary{margin-bottom:8px;}
+  .map-drawer svg{display:block;}
+  .navlink{display:block;text-align:center;background:#eef4ff;color:#2563eb;border:1px solid #c7d2fe;border-radius:10px;padding:9px;font-size:13px;font-weight:600;text-decoration:none;margin-top:2px;}
+  .navlink:active{background:#dbe7ff;}
+  .day-done{margin-left:auto;flex:none;border:1px solid rgba(255,255,255,.6);background:rgba(255,255,255,.12);color:#fff;border-radius:999px;padding:3px 11px;font-size:11.5px;cursor:pointer;}
+  .day-done.on{background:#22c55e;border-color:#22c55e;font-weight:600;}
+  .syncbadge{display:inline-block;margin:8px 16px 0;font-size:11px;color:#fff;background:rgba(255,255,255,.15);border-radius:999px;padding:2px 10px;}
+  .syncbadge.ok{background:rgba(34,197,94,.85);}
+  .syncbadge.err{background:rgba(220,38,38,.85);}
+  .progrow{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+  .progress{flex:1;height:8px;background:#ece6dc;border-radius:999px;overflow:hidden;}
+  .progress-bar{height:100%;background:linear-gradient(90deg,#16a34a,#22c55e);border-radius:999px;transition:width .4s;}
+  .prog-pct{font-size:12px;color:var(--mut);font-weight:600;min-width:34px;text-align:right;}
+  .budget-total b{font-size:15px;color:var(--red);}
+  @media (max-width:430px){.day-head .theme{display:none;}}
   /* edit mode */
   .edit-note{background:#eef2ff;border:1px solid #c7d2fe;color:#3730a3;border-radius:10px;
     padding:8px 12px;font-size:12px;margin-bottom:12px;}
@@ -118,6 +139,8 @@
   .kpi .l{font-size:11px;color:var(--mut);}
   .bottom-fab{position:fixed;right:16px;bottom:84px;z-index:30;display:none;}
   .bottom-fab.show{display:block;}
+  .bottom-fab#btn-savecloud{background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;border:0;border-radius:999px;padding:12px 22px;font-size:14px;font-weight:600;box-shadow:0 6px 18px rgba(22,163,74,.45);cursor:pointer;}
+  .bottom-fab#btn-savecloud:active{transform:scale(.96);}
 </style>
 </head>
 <body>
@@ -129,6 +152,7 @@
       <button class="h-btn" id="btn-edit">✏️ 编辑</button>
     </div>
     <p id="app-sub"></p>
+    <span class="syncbadge" id="sync-badge">☁️ 同步中…</span>
   </header>
   <nav class="tabs" id="tabs">
     <button data-tab="trip" class="on"><span class="ic">🗓️</span>行程</button>
@@ -140,6 +164,8 @@
   <main id="main"></main>
 </div>
 
+<button class="bottom-fab" id="btn-savecloud">☁️ 保存到云端</button>
+
 <div class="mask" id="mask">
   <div class="sheet">
     <button class="x" id="sheet-close">✕</button>
@@ -147,7 +173,15 @@
     <button id="act-copy">📋 复制分享文本（发微信/备忘录）</button>
     <button id="act-export">⬇️ 导出备份 JSON 文件</button>
     <button id="act-import">⬆️ 导入备份 JSON 文件</button>
+    <button id="act-share">📤 导出 data.json（更新网址用）</button>
+    <button id="act-savecloud">☁️ 立即保存到云端（所有人立即可见）</button>
+    <button id="act-pull">🌐 从线上拉取最新攻略</button>
+    <input id="gh-token" class="inp" type="password" placeholder="GitHub 令牌（可选，仅存本机，用于☁️同步）" style="margin-bottom:8px" autocomplete="off">
+    <button id="act-sync">☁️ 保存并同步到线上（约1分钟，所有人打开网址即新版）</button>
+    <div class="note" style="margin-top:4px;font-size:11.5px;color:#6b7280">📖 说明：令牌在 GitHub → Settings → Developer settings → Personal access tokens 里生成（只勾选该仓库 Contents 读写权限）；它只保存在你手机本地，不会上传到网页。没有令牌也能正常查看和本地编辑。</div>
     <button id="act-reset">🔄 恢复为默认攻略</button>
+    <div class="note" style="margin-top:6px;font-size:11px;color:#9ca3af">版本 v1.2 · 更新于 2026-08-02 · 若功能非最新请下拉刷新</div>
+    <div class="note" style="margin-top:4px;font-size:11.5px;color:#6b7280">☁️ 已开启自动云同步：任何人在网页里编辑，约3秒后自动保存到云端；所有人打开/刷新网页（或等待约60秒自动刷新）即可看到最新版。<br>📤 GitHub 方式（可选）：改好后点「导出 data.json」上传到仓库（Add file → Upload files），约1分钟生效；不便操作可把 data.json 发给 Codex 代传。</div>
   </div>
 </div>
 <input type="file" id="file-import" accept=".json,application/json" hidden>
@@ -157,90 +191,447 @@
 (function(){
 'use strict';
 var KEY='csl-travel-app-v1';
+var CLOUD='https://jsonblob.com/api/jsonBlob/019fc354-7e68-772f-90c9-b161c53a6a13';
 
-var DEFAULT={
-  meta:{title:'安庆→长沙 自驾3天2晚',sub:'8月8日(六) 14:00 出发 · 8月10日(一) 晚到家',alert:'⚠️ <b>今晚 8/2 20:00</b> 抢湖南博物院 8/9 门票（免费·提前7天放票·周一闭馆）'},
-  transport:{
-    outbound:{title:'去程 · 8/8 下午2点出发',lines:[
-      '14:00 安庆出发（检查车况、加满油、ETC正常）',
-      '15:30 第一次服务区休息',
-      '18:30 服务区晚餐休息（武汉绕城后转入G4京港澳南下）',
-      '约22:30 抵达长沙酒店（五一广场商圈·带停车位）'
-    ],note:'全程约630km · 高速约7.5h+休息≈8.5h · 油费约380元+过路费约300元'},
-    ret:{title:'返程 · 8/10',lines:[
-      '13:00 酒店退房出发（最晚别超过13:30）',
-      '15:00 服务区休息·轮换驾驶',
-      '18:30 服务区晚餐休息',
-      '约21:30~22:00 抵达安庆'
-    ],note:'同线路约8.5h含休息 · 两人轮换开车 · 夜间高速注意安全'},
-    route:'安庆 → 合安高速/沪渝高速 → 武汉绕城 → 京港澳高速(G4) → 长沙',compareTitle:'💡 自驾 vs 高铁',compareLines:['自驾：整车往返约1500元（油费+过路费），单程8.5h，胜在自由','高铁：每人往返约700元，单程仅4h（需南昌西/武汉中转），胜在省时'],compareNote:'返程若太累，可考虑在长沙还车后坐高铁回（适合异地还车）'
+var DEFAULT=
+{
+  "meta": {
+    "title": "安庆→长沙 自驾3天2晚",
+    "sub": "8月8日(六) 14:00 出发 · 8月10日(一) 晚到家",
+    "alert": "⚠️ <b>今晚 8/2 20:00</b> 抢湖南博物院 8/9 门票（免费·提前7天放票·周一闭馆）"
   },
-  days:[
-    {id:'d1',name:'DAY 1',date:'8月8日 · 周六',tagline:'出发日',theme:'自驾8.5h → 深夜抵达',cls:'d1',items:[
-      {time:'14:00',title:'安庆出发',desc:'导航设终点为长沙酒店；检查车况、加满油、ETC',cat:'tra'},
-      {time:'15:30',title:'服务区休息',desc:'备好水、零食、颈枕；建议每2小时休息一次',cat:'tra'},
-      {time:'18:30',title:'服务区晚餐休息',desc:'武汉绕城前后转入G4京港澳南下，大车多保持车距',cat:'tra'},
-      {time:'22:30',title:'抵达长沙 · 入住酒店',desc:'五一广场附近带停车场酒店（提前电话确认车位）',cat:'stay'},
-      {time:'23:00',title:'夜宵（可选）',desc:'太平街/火宫殿24小时小吃；困了就早点休息',cat:'food'}
-    ]},
-    {id:'d2',name:'DAY 2',date:'8月9日 · 周日',tagline:'精华一日',theme:'博物院→岳麓山→橘子洲',cls:'d2',items:[
-      {time:'08:30',title:'早餐嗦粉（公交新村粉店）',desc:'长沙人的一天从一碗米粉开始',cat:'food'},
-      {time:'09:00',title:'湖南博物院（免费·需预约）',desc:'地铁6号线湖南博物院站；马王堆汉墓陈列（辛追夫人/素纱襌衣）；周一闭馆，只能约今天',cat:'sight'},
-      {time:'12:00',title:'麓山南路/湖大美食街午餐',desc:'地铁4号线湖南大学站（岳麓山南门）',cat:'food'},
-      {time:'13:00',title:'岳麓书院（40元）→ 爱晚亭',desc:'千年学府“惟楚有才，于斯为盛”；17:00停止售票；天热可不登顶',cat:'sight'},
-      {time:'16:30',title:'地铁2号线 → 橘子洲站',desc:'从岳麓山下来两站即到',cat:'move'},
-      {time:'17:00',title:'橘子洲（免费）· 小火车往返40元',desc:'毛泽东青年艺术雕像 → 日落 → 湘江夜景；21:00前入园',cat:'sight'},
-      {time:'20:00',title:'湘菜晚餐',desc:'一盏灯 / 笨萝卜 / 费大厨；可选湘江夜游船188元起',cat:'food'}
-    ]},
-    {id:'d3',name:'DAY 3',date:'8月10日 · 周一',tagline:'返程日',theme:'天心阁→伴手礼→自驾回程',cls:'d3',items:[
-      {time:'08:30',title:'早餐 + 茶颜悦色伴手礼',desc:'茶包/臭豆腐/酱板鸭/剁椒酱',cat:'food'},
-      {time:'09:30',title:'天心阁（日场30元）+ 古城漫步',desc:'古城墙城楼、白沙古井、都正街、白果园巷；周一博物馆闭馆',cat:'sight'},
-      {time:'12:00',title:'午餐：费大厨辣椒炒肉',desc:'吃完回酒店取行李',cat:'food'},
-      {time:'13:00',title:'退房出发返程（最晚13:30）',desc:'油箱加满再上高速',cat:'tra'},
-      {time:'15:00',title:'服务区休息 · 轮换驾驶',desc:'午后易困，休息20分钟再走',cat:'tra'},
-      {time:'18:30',title:'服务区晚餐休息',desc:'天黑后降速，注意对向远光',cat:'tra'},
-      {time:'21:30',title:'抵达安庆 · 到家',desc:'预计21:30~22:00',cat:'tra'}
-    ]}
+  "transport": {
+    "outbound": {
+      "title": "去程 · 8/8 下午2点出发",
+      "lines": [
+        "14:00 安庆出发（检查车况、加满油、ETC正常）",
+        "15:30 第一次服务区休息",
+        "18:30 服务区晚餐休息（武汉绕城后转入G4京港澳南下）",
+        "约22:30 抵达长沙酒店（五一广场商圈·带停车位）"
+      ],
+      "note": "全程约630km · 高速约7.5h+休息≈8.5h · 油费约380元+过路费约300元"
+    },
+    "ret": {
+      "title": "返程 · 8/10",
+      "lines": [
+        "13:00 酒店退房出发（最晚别超过13:30）",
+        "15:00 服务区休息·轮换驾驶",
+        "18:30 服务区晚餐休息",
+        "约21:30~22:00 抵达安庆"
+      ],
+      "note": "同线路约8.5h含休息 · 两人轮换开车 · 夜间高速注意安全"
+    },
+    "route": "安庆 → 合安高速/沪渝高速 → 武汉绕城 → 京港澳高速(G4) → 长沙",
+    "compareTitle": "💡 自驾 vs 高铁",
+    "compareLines": [
+      "自驾：整车往返约1500元（油费+过路费），单程8.5h，胜在自由",
+      "高铁：每人往返约700元，单程仅4h（需南昌西/武汉中转），胜在省时"
+    ],
+    "compareNote": "返程若太累，可考虑在长沙还车后坐高铁回（适合异地还车）"
+  },
+  "days": [
+    {
+      "id": "d1",
+      "name": "DAY 1",
+      "date": "8月8日 · 周六",
+      "tagline": "出发日",
+      "theme": "自驾8.5h → 深夜抵达",
+      "cls": "d1",
+      "items": [
+        {
+          "time": "14:00",
+          "title": "安庆出发",
+          "desc": "导航设终点为长沙酒店；检查车况、加满油、ETC",
+          "cat": "tra"
+        },
+        {
+          "time": "15:30",
+          "title": "服务区休息",
+          "desc": "备好水、零食、颈枕；建议每2小时休息一次",
+          "cat": "tra"
+        },
+        {
+          "time": "18:30",
+          "title": "服务区晚餐休息",
+          "desc": "武汉绕城前后转入G4京港澳南下，大车多保持车距",
+          "cat": "tra"
+        },
+        {
+          "time": "22:30",
+          "title": "抵达长沙 · 入住酒店",
+          "desc": "五一广场附近带停车场酒店（提前电话确认车位）",
+          "cat": "stay"
+        },
+        {
+          "time": "23:00",
+          "title": "夜宵（可选）",
+          "desc": "太平街/火宫殿24小时小吃；困了就早点休息",
+          "cat": "food"
+        }
+      ]
+    },
+    {
+      "id": "d2",
+      "name": "DAY 2",
+      "date": "8月9日 · 周日",
+      "tagline": "精华一日",
+      "theme": "博物院→岳麓山→橘子洲",
+      "cls": "d2",
+      "items": [
+        {
+          "time": "08:30",
+          "title": "早餐嗦粉（公交新村粉店）",
+          "desc": "长沙人的一天从一碗米粉开始",
+          "cat": "food"
+        },
+        {
+          "time": "09:00",
+          "title": "湖南博物院（免费·需预约）",
+          "desc": "地铁6号线湖南博物院站；马王堆汉墓陈列（辛追夫人/素纱襌衣）；周一闭馆，只能约今天",
+          "cat": "sight"
+        },
+        {
+          "time": "12:00",
+          "title": "麓山南路/湖大美食街午餐",
+          "desc": "地铁4号线湖南大学站（岳麓山南门）",
+          "cat": "food"
+        },
+        {
+          "time": "13:00",
+          "title": "岳麓书院（40元）→ 爱晚亭",
+          "desc": "千年学府“惟楚有才，于斯为盛”；17:00停止售票；天热可不登顶",
+          "cat": "sight"
+        },
+        {
+          "time": "16:30",
+          "title": "地铁2号线 → 橘子洲站",
+          "desc": "从岳麓山下来两站即到",
+          "cat": "move"
+        },
+        {
+          "time": "17:00",
+          "title": "橘子洲（免费）· 小火车往返40元",
+          "desc": "毛泽东青年艺术雕像 → 日落 → 湘江夜景；21:00前入园",
+          "cat": "sight"
+        },
+        {
+          "time": "20:00",
+          "title": "湘菜晚餐",
+          "desc": "一盏灯 / 笨萝卜 / 费大厨；可选湘江夜游船188元起",
+          "cat": "food"
+        }
+      ]
+    },
+    {
+      "id": "d3",
+      "name": "DAY 3",
+      "date": "8月10日 · 周一",
+      "tagline": "返程日",
+      "theme": "天心阁→伴手礼→自驾回程",
+      "cls": "d3",
+      "items": [
+        {
+          "time": "08:30",
+          "title": "早餐 + 茶颜悦色伴手礼",
+          "desc": "茶包/臭豆腐/酱板鸭/剁椒酱",
+          "cat": "food"
+        },
+        {
+          "time": "09:30",
+          "title": "天心阁（日场30元）+ 古城漫步",
+          "desc": "古城墙城楼、白沙古井、都正街、白果园巷；周一博物馆闭馆",
+          "cat": "sight"
+        },
+        {
+          "time": "12:00",
+          "title": "午餐：费大厨辣椒炒肉",
+          "desc": "吃完回酒店取行李",
+          "cat": "food"
+        },
+        {
+          "time": "13:00",
+          "title": "退房出发返程（最晚13:30）",
+          "desc": "油箱加满再上高速",
+          "cat": "tra"
+        },
+        {
+          "time": "15:00",
+          "title": "服务区休息 · 轮换驾驶",
+          "desc": "午后易困，休息20分钟再走",
+          "cat": "tra"
+        },
+        {
+          "time": "18:30",
+          "title": "服务区晚餐休息",
+          "desc": "天黑后降速，注意对向远光",
+          "cat": "tra"
+        },
+        {
+          "time": "21:30",
+          "title": "抵达安庆 · 到家",
+          "desc": "预计21:30~22:00",
+          "cat": "tra"
+        }
+      ]
+    }
   ],
-  bookings:[
-    {text:'抢湖南博物院 8/9 门票（免费·提前7天·每天20:00放票）',done:false,urgent:true},
-    {text:'约岳麓山 + 橘子洲（提前3天·每天0点放票·免费）',done:false,urgent:true},
-    {text:'购岳麓书院门票（40元/人·提前3天）',done:false,urgent:true},
-    {text:'订五一广场酒店并确认停车位',done:false,urgent:true},
-    {text:'车辆检查：胎压/机油/冷却液/雨刮/ETC余额',done:false,urgent:false}
+  "bookings": [
+    {
+      "text": "抢湖南博物院 8/9 门票（免费·提前7天·每天20:00放票）",
+      "done": false,
+      "urgent": true
+    },
+    {
+      "text": "约岳麓山 + 橘子洲（提前3天·每天0点放票·免费）",
+      "done": false,
+      "urgent": true
+    },
+    {
+      "text": "购岳麓书院门票（40元/人·提前3天）",
+      "done": false,
+      "urgent": true
+    },
+    {
+      "text": "订五一广场酒店并确认停车位",
+      "done": false,
+      "urgent": true
+    },
+    {
+      "text": "车辆检查：胎压/机油/冷却液/雨刮/ETC余额",
+      "done": false,
+      "urgent": false
+    }
   ],
-  budget:[
-    {name:'油费（往返）',price:'约760',note:'单程约380元'},
-    {name:'过路费（往返）',price:'约600',note:'单程约300元'},
-    {name:'市内停车费',price:'约50-150',note:'以酒店为主，景点地铁出行'},
-    {name:'湖南博物院',price:'免费',note:'需提前预约、刷身份证'},
-    {name:'岳麓书院',price:'40元/人',note:'学生/老人半价'},
-    {name:'橘子洲小火车',price:'40元/人',note:'往返'},
-    {name:'杜甫江阁',price:'18元/人',note:'江边看外景免费'},
-    {name:'天心阁',price:'30元/人',note:'日场'},
-    {name:'住宿（2晚）',price:'500-1000',note:'五一广场商圈'},
-    {name:'餐饮（3天2人）',price:'约600-900',note:'含小吃与湘菜'}
+  "budget": [
+    {
+      "name": "油费（往返）",
+      "price": "约760",
+      "note": "单程约380元"
+    },
+    {
+      "name": "过路费（往返）",
+      "price": "约600",
+      "note": "单程约300元"
+    },
+    {
+      "name": "市内停车费",
+      "price": "约50-150",
+      "note": "以酒店为主，景点地铁出行"
+    },
+    {
+      "name": "湖南博物院",
+      "price": "免费",
+      "note": "需提前预约、刷身份证"
+    },
+    {
+      "name": "岳麓书院",
+      "price": "40元/人",
+      "note": "学生/老人半价"
+    },
+    {
+      "name": "橘子洲小火车",
+      "price": "40元/人",
+      "note": "往返"
+    },
+    {
+      "name": "杜甫江阁",
+      "price": "18元/人",
+      "note": "江边看外景免费"
+    },
+    {
+      "name": "天心阁",
+      "price": "30元/人",
+      "note": "日场"
+    },
+    {
+      "name": "住宿（2晚）",
+      "price": "500-1000",
+      "note": "五一广场商圈"
+    },
+    {
+      "name": "餐饮（3天2人）",
+      "price": "约600-900",
+      "note": "含小吃与湘菜"
+    }
   ],
-  tips:[
-    '8月长沙白天近40℃，暴晒时段安排室内，户外集中早晚；带伞、防晒、水',
-    '市内车停酒店，坐地铁2/4/6号线最省心；五一广场停车首选IFS国金中心地下车库',
-    '博物院刷身份证原件入场；学生/老人带好优惠证件，多数景点半价或免票',
-    '必吃：茶颜悦色、黑色经典臭豆腐、糖油粑粑、米粉、小龙虾、辣椒炒肉',
-    'G4京港澳大货车多；连续驾驶2小时强制休息；回程夜间行车备好提神饮料',
-    '出行前用导航软件再查一次实时路况与限行（长沙市区外地牌不限行）'
-  ]
-};
-
+  "tips": [
+    "8月长沙白天近40℃，暴晒时段安排室内，户外集中早晚；带伞、防晒、水",
+    "市内车停酒店，坐地铁2/4/6号线最省心；五一广场停车首选IFS国金中心地下车库",
+    "博物院刷身份证原件入场；学生/老人带好优惠证件，多数景点半价或免票",
+    "必吃：茶颜悦色、黑色经典臭豆腐、糖油粑粑、米粉、小龙虾、辣椒炒肉",
+    "G4京港澳大货车多；连续驾驶2小时强制休息；回程夜间行车备好提神饮料",
+    "出行前用导航软件再查一次实时路况与限行（长沙市区外地牌不限行）"
+  ],
+  "map": {
+    "title": "3天总路线 · 往返约1260km",
+    "sub": "安庆出发 → 长沙（示意图，非精确比例）",
+    "points": {
+      "安庆": [
+        170,
+        720
+      ],
+      "武汉": [
+        430,
+        430
+      ],
+      "长沙": [
+        700,
+        600
+      ],
+      "湖南博物院": [
+        560,
+        470
+      ],
+      "岳麓山": [
+        760,
+        680
+      ],
+      "橘子洲": [
+        690,
+        640
+      ]
+    },
+    "segments": [
+      {
+        "label": "DAY 1",
+        "color": "#2563eb",
+        "route": [
+          "安庆",
+          "武汉",
+          "长沙"
+        ],
+        "km": "630km · 8.5h"
+      },
+      {
+        "label": "DAY 2",
+        "color": "#16a34a",
+        "route": [
+          "湖南博物院",
+          "岳麓山",
+          "橘子洲"
+        ],
+        "km": "市内 · 地铁出行"
+      },
+      {
+        "label": "DAY 3",
+        "color": "#ea580c",
+        "route": [
+          "长沙",
+          "安庆"
+        ],
+        "km": "630km · 8.5h"
+      }
+    ],
+    "deco": {
+      "river": {
+        "d": "M60 540 C 240 500, 360 490, 500 480",
+        "label": "长江（示意）",
+        "tx": 150,
+        "ty": 520,
+        "color": "#60a5fa"
+      },
+      "labels": []
+    }
+  }
+}
 var state, editing=false, tab='trip';
 
-function load(){try{var s=localStorage.getItem(KEY);if(s){var o=JSON.parse(s);if(o&&o.meta)return o;}}catch(e){}return JSON.parse(JSON.stringify(DEFAULT));}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
+function load(){var d=JSON.parse(JSON.stringify(DEFAULT));try{var s=localStorage.getItem(KEY);if(s){var o=JSON.parse(s);if(o&&o.meta){if(!o.map)o.map=d.map;return o;}}}catch(e){}return d;}
+var cloudTimer=null;
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
+function save(){persist();if(cloudTimer)clearTimeout(cloudTimer);cloudTimer=setTimeout(cloudPush,3000);}
+var lastCloudErr=0;
+function setSync(txt,cls){var b=$id('sync-badge');if(!b)return;b.textContent=txt;b.className='syncbadge'+(cls?' '+cls:'');}
+function markLm(r){try{var lm=r.headers.get('Last-Modified');if(lm)localStorage.setItem('csl_lm',lm);}catch(e){}}
+function cloudPush(){
+  cloudTimer=null;
+  try{state.meta.syncAt=Date.now();persist();}catch(e){}
+  var body=JSON.stringify(state),attempts=0;
+  setSync('☁️ 同步中…');
+  function tryPush(){
+    attempts++;
+    fetch(CLOUD,{method:'PUT',headers:{'Content-Type':'application/json'},body:body})
+    .then(function(r){if(!r.ok)throw 0;markLm(r);setSync('✅ 已同步','ok');})
+    .catch(function(){
+      if(attempts<2){setTimeout(tryPush,2000);}
+      else{
+        setSync('⚠️ 离线','err');
+        if(Date.now()-lastCloudErr>60000){lastCloudErr=Date.now();toast('⚠️ 云端暂不可用，修改已保存在本地');}
+      }
+    });
+  }
+  tryPush();
+}
+function cloudPull(force){
+  return fetch(CLOUD,{cache:'no-store'}).then(function(r){if(!r.ok)throw 0;var lm=r.headers.get('Last-Modified');return r.json().then(function(d){return {d:d,lm:lm};});}).then(function(o){
+    var d=o.d;if(!d||!d.meta||!d.days)throw 0;
+    var ae=document.activeElement;if(!force&&ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA'||ae.tagName==='SELECT'))return;
+    var stored=null;try{stored=localStorage.getItem('csl_lm');}catch(e){}
+    var mine=state.meta.syncAt||0,theirs=d.meta.syncAt||0;
+    if(force||(o.lm&&(!stored||o.lm>stored))||theirs>mine){
+      state=JSON.parse(JSON.stringify(d));
+      if(!state.map)state.map=JSON.parse(JSON.stringify(DEFAULT.map));
+      persist();
+      if(o.lm){try{localStorage.setItem('csl_lm',o.lm);}catch(e){}}
+      render();
+      if(force)toast('✅ 已更新为云端最新版');
+    }else if(force){toast('已是最新版本');}
+    setSync('✅ 已同步','ok');
+  }).catch(function(){setSync('⚠️ 离线','err');if(force)toast('⚠️ 云端暂时无法连接');});
+}
 function $id(x){return document.getElementById(x);}
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function catName(c){return {tra:'交通',sight:'景点',food:'美食',shop:'购物',stay:'住宿',move:'移动'}[c]||c;}
 function catTag(c){return '<span class="tag t-'+c+'">'+catName(c)+'</span>';}
 function toast(msg){var t=$id('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(function(){t.classList.remove('show');},1800);}
 
+
+function polySvg(seg,pts,color,w,dash){
+  var d='';
+  seg.route.forEach(function(n,i){var p=pts[n];d+=(i?'L':'M')+p[0]+' '+p[1]+' ';});
+  return '<path d="'+d.trim()+'" fill="none" stroke="'+color+'" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round"'+(dash?' stroke-dasharray="'+dash+'"':'')+'/>';
+}
+function mapSvg(segIdx,isTotal){
+  var m=state.map||DEFAULT.map,pts=m.points,W=920,H=880,names=Object.keys(pts);
+  var h='<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;background:#fffdf9;border-radius:10px">';
+  h+='<rect x="0" y="0" width="'+W+'" height="'+H+'" rx="12" fill="#fffdf9"/>';
+  if(isTotal){
+    if(m.deco&&m.deco.river)h+='<path d="'+m.deco.river.d+'" fill="none" stroke="'+(m.deco.river.color||'#60a5fa')+'" stroke-width="3" stroke-dasharray="6 5"/><text x="'+(m.deco.river.tx||462)+'" y="'+(m.deco.river.ty||398)+'" font-size="12" fill="#3b82f6">'+m.deco.river.label+'</text>';
+    if(m.deco&&m.deco.labels)(m.deco.labels||[]).forEach(function(l){h+='<text x="'+l.x+'" y="'+l.y+'" font-size="'+(l.size||15)+'" fill="'+(l.color||'#9ca3af')+'" opacity="'+(l.op||1)+'">'+l.text+'</text>';});
+    h+='<text x="24" y="40" font-size="15" font-weight="600" fill="#374151">'+(m.title||'全程路线图')+'</text>';
+    h+='<text x="24" y="62" font-size="12" fill="#6b7280">'+(m.sub||'示意图，非精确比例')+'</text>';
+  } else {
+    var cur=m.segments[segIdx];
+    h+='<text x="24" y="40" font-size="14" font-weight="600" fill="'+cur.color+'">'+cur.label+' · '+cur.km+'</text>';
+  }
+  h+='<g opacity=".3">';
+  m.segments.forEach(function(s){h+=polySvg(s,pts,'#9ca3af',3,s.dash||null);});
+  h+='</g>';
+  if(isTotal){m.segments.forEach(function(s){h+=polySvg(s,pts,s.color,5,s.dash||null);});}
+  else{var cur2=m.segments[segIdx];h+=polySvg(cur2,pts,cur2.color,5,cur2.dash||null);}
+  var startN=(isTotal?m.segments[0]:m.segments[segIdx]).route[0];
+  var endSeg=isTotal?m.segments[m.segments.length-1]:m.segments[segIdx];
+  var endN=endSeg.route[endSeg.route.length-1];
+  names.forEach(function(n){
+    var p=pts[n];
+    h+='<circle cx="'+p[0]+'" cy="'+p[1]+'" r="5" fill="#fff" stroke="#6b7280" stroke-width="2"/>';
+    if(p[0]>750){h+='<text x="'+(p[0]-9)+'" y="'+(p[1]+4)+'" font-size="13" fill="#374151" text-anchor="end">'+n+'</text>';}
+    else{h+='<text x="'+(p[0]+9)+'" y="'+(p[1]+4)+'" font-size="13" fill="#374151">'+n+'</text>';}
+  });
+  var sp=pts[startN],ep=pts[endN];
+  if(startN!==endN)h+='<circle cx="'+sp[0]+'" cy="'+sp[1]+'" r="11" fill="#16a34a" stroke="#fff" stroke-width="2.5"/><text x="'+sp[0]+'" y="'+(sp[1]+4)+'" font-size="11" fill="#fff" text-anchor="middle">起</text>';
+  h+='<circle cx="'+ep[0]+'" cy="'+ep[1]+'" r="11" fill="#dc2626" stroke="#fff" stroke-width="2.5"/><text x="'+ep[0]+'" y="'+(ep[1]+4)+'" font-size="11" fill="#fff" text-anchor="middle">终</text>';
+  if(isTotal){
+    var lx=24;
+    m.segments.forEach(function(sg,i){
+      h+='<line x1="'+lx+'" x2="'+(lx+36)+'" y1="816" y2="816" stroke="'+sg.color+'" stroke-width="5" stroke-linecap="round"/>';
+      h+='<text x="'+(lx+42)+'" y="821" font-size="12" fill="#374151">'+(i+1)+'</text>';
+      lx+=78;
+    });
+  }
+  h+='</svg>';
+  return h;
+}
 /* ---------- render ---------- */
 function render(){
   $id('app-title').textContent=state.meta.title;
@@ -248,6 +639,7 @@ function render(){
   var be=$id('btn-edit');
   be.textContent=editing?'✔️ 完成':'✏️ 编辑';
   be.classList.toggle('on',editing);
+  $id('btn-savecloud').classList.toggle('show',editing);
   document.querySelectorAll('#tabs button').forEach(function(b){b.classList.toggle('on',b.dataset.tab===tab);});
   if(tab==='trip')renderTrip();else if(tab==='transport')renderTransport();
   else if(tab==='book')renderBook();else if(tab==='budget')renderBudget();else renderTips();
@@ -261,21 +653,27 @@ function renderTrip(){
       +'<input class="inp" data-meta="title" value="'+esc(state.meta.title)+'" placeholder="攻略标题">'
       +'<input class="inp" data-meta="sub" value="'+esc(state.meta.sub)+'" placeholder="副标题"></div></div>';
   }
-  h+='<div class="kpi"><div class="card"><div class="n">'+state.days.length+'</div><div class="l">天行程</div></div>'
+  var doneDays=state.days.filter(function(d){return d.done;}).length,pct=state.days.length?Math.round(doneDays/state.days.length*100):0;
+  h+='<div class="kpi"><div class="card"><div class="n">'+doneDays+'/'+state.days.length+'</div><div class="l">天已完成</div></div>'
     +'<div class="card"><div class="n">'+countItems()+'</div><div class="l">个安排</div></div>'
     +'<div class="card"><div class="n">'+state.bookings.filter(function(b){return !b.done;}).length+'</div><div class="l">待办</div></div></div>';
+  h+='<div class="progrow"><div class="progress"><div class="progress-bar" style="width:'+pct+'%"></div></div><span class="prog-pct">'+pct+'%</span></div>';
+  if(state.map&&state.map.segments)h+='<div class="card"><h3>🗺️ 7天总路线图</h3>'+mapSvg(0,true)+'<div class="note">'+(state.map.sub||'')+' · 彩色分段为每日路线；点开每天卡片里的“当日路线图”看详情</div></div>';
   if(state.meta.alert)h+='<div class="urgent">'+state.meta.alert+'</div>';
   state.days.forEach(function(d,di){
     h+='<div class="day"><div class="day-head '+d.cls+'"><div><div class="dt">'+esc(d.name)+'</div><div class="ds">'+esc(d.date)+' · '+esc(d.tagline)+'</div></div>'
-      +'<div class="theme">'+esc(d.theme)+'</div></div>';
+      +'<div class="theme">'+esc(d.theme)+'</div>'
+      +(editing?'':'<button class="day-done'+(d.done?' on':'')+'" data-act="daydone" data-day="'+di+'">'+(d.done?'✔ 已完成':'✓ 标记完成')+'</button>')
+      +'</div>';
     if(editing){
       h+='<div class="day-edit">'
         +'<div class="edit-head"><input class="inp" data-day="'+di+'" data-f="name" value="'+esc(d.name)+'" placeholder="名称"><input class="inp" data-day="'+di+'" data-f="date" value="'+esc(d.date)+'" placeholder="日期"></div>'
         +'<div class="edit-head"><input class="inp" data-day="'+di+'" data-f="tagline" value="'+esc(d.tagline)+'" placeholder="标签"><input class="inp" data-day="'+di+'" data-f="theme" value="'+esc(d.theme)+'" placeholder="主题"></div>'
         +'<select class="inp" data-day="'+di+'" data-f="cls">'
-        +['d1','d2','d3','d4'].map(function(c){return '<option value="'+c+'"'+(d.cls===c?' selected':'')+'>DAY'+(parseInt(c[1])||1)+' 配色</option>';}).join('')
+        +['d1','d2','d3','d4','d5','d6','d7'].map(function(c){return '<option value="'+c+'"'+(d.cls===c?' selected':'')+'>DAY'+(parseInt(c[1])||1)+' 配色</option>';}).join('')
         +'</select></div>';
     }
+    if(state.map&&state.map.segments[di])h+='<details class="map-drawer" open><summary>🗺️ 当日路线图 · '+esc(d.name)+'</summary>'+mapSvg(di,false)+'</details>';
     h+='<div class="tl">';
     d.items.forEach(function(it,ii){
       h+='<div class="item"><span class="dot t-'+it.cat+'"></span><div class="time">'+esc(it.time)+'</div><div>';
@@ -299,6 +697,11 @@ function renderTrip(){
     });
     h+='</div>';
     if(editing)h+='<div style="padding:0 12px 12px"><button class="add-btn" data-act="additem" data-day="'+di+'">＋ 添加安排</button></div>';
+    if(!editing&&state.map&&state.map.segments[di]){
+      var sg=state.map.segments[di],fn=sg.route[0],tn=sg.route[sg.route.length-1];
+      var href=fn===tn?('https://uri.amap.com/search?keyword='+encodeURIComponent('阿尔山国家森林公园')):('https://uri.amap.com/direction?from='+encodeURIComponent(fn)+'&to='+encodeURIComponent(tn)+'&mode=car&callnative=1');
+      h+='<div style="padding:0 12px 10px"><a class="navlink" target="_blank" rel="noopener" href="'+href+'">🚗 导航本段路线（高德地图）</a></div>';
+    }
     if(editing&&state.days.length>1)h+='<div style="padding:0 12px 12px"><button class="add-btn" style="border-color:#fecaca;color:var(--hot)" data-act="delday" data-day="'+di+'">删除这一天</button></div>';
     h+='</div>';
   });
@@ -362,6 +765,12 @@ function renderBook(){
 function renderBudget(){
   var h='';
   if(editing)h+='<div class="edit-note">编辑模式：修改会自动保存。</div>';
+  var bsum=0,bcnt=0;
+  state.budget.forEach(function(r){
+    var nums=String(r.price||'').match(/\d+(\.\d+)?/g);
+    if(nums&&nums.length){var v=parseFloat(nums[0]);if(nums.length>1)v=(v+parseFloat(nums[1]))/2;bsum+=v;bcnt++;}
+  });
+  h+='<div class="card budget-total"><b>💰 估算合计：约 ¥'+Math.round(bsum)+'</b><div class="note">按'+bcnt+'项费用的中间值估算（"免费"等无数字项不计入），仅供参考</div></div>';
   h+='<div class="card" style="padding:0;overflow:hidden"><table><tr><th>项目</th><th>费用</th><th>说明</th></tr>';
   state.budget.forEach(function(r,i){
     if(editing){
@@ -410,6 +819,15 @@ function addItem(di){state.days[di].items.push({time:'00:00',title:'新安排',d
 function addDay(){state.days.push({id:'d'+Date.now(),name:'DAY '+(state.days.length+1),date:'新日期',tagline:'',theme:'',cls:'d4',items:[{time:'00:00',title:'新安排',desc:'',cat:'move'}]});save();render();}
 function delDay(di){state.days.splice(di,1);save();render();}
 
+function saveCloud(){
+  try{state.meta.syncAt=Date.now();persist();}catch(e){}
+  if(cloudTimer){clearTimeout(cloudTimer);cloudTimer=null;}
+  setSync('☁️ 同步中…');
+  toast('☁️ 正在保存到云端...');
+  fetch(CLOUD,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(state)})
+  .then(function(r){if(!r.ok)throw 0;markLm(r);setSync('✅ 已同步','ok');toast('✅ 已保存到云端，所有人打开网址即最新版');})
+  .catch(function(){setSync('⚠️ 离线','err');toast('⚠️ 云端暂不可用，修改已保存在本地');});
+}
 function makeShareText(){
   var L=[];var m=state.meta;
   L.push('【'+m.title+'】','📅 '+m.sub,'');
@@ -431,7 +849,8 @@ function makeShareText(){
 /* ---------- events ---------- */
 function wire(){
   $id('btn-edit').addEventListener('click',function(){editing=!editing;render();});
-  $id('btn-data').addEventListener('click',function(){$id('mask').classList.add('show');});
+  $id('btn-savecloud').addEventListener('click',function(){saveCloud();});
+  $id('btn-data').addEventListener('click',function(){try{$id('gh-token').value=localStorage.getItem('csl_gh_token')||'';}catch(e){};$id('mask').classList.add('show');});
   $id('sheet-close').addEventListener('click',function(){$id('mask').classList.remove('show');});
   $id('mask').addEventListener('click',function(e){if(e.target===this)this.classList.remove('show');});
   document.querySelectorAll('#tabs button').forEach(function(b){
@@ -461,6 +880,29 @@ function wire(){
     };
     rd.readAsText(f);this.value='';
   });
+  $id('act-share').addEventListener('click',function(){
+    var blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='data.json';a.click();URL.revokeObjectURL(a.href);
+    toast('已导出 data.json（上传到仓库即可更新网址）');$id('mask').classList.remove('show');
+  });
+  $id('act-savecloud').addEventListener('click',function(){saveCloud();$id('mask').classList.remove('show');});
+  $id('act-pull').addEventListener('click',function(){$id('mask').classList.remove('show');cloudPull(true);});
+  $id('act-sync').addEventListener('click',function(){
+    var token=($id('gh-token').value||'').trim();
+    if(!token){toast('请先在上方输入 GitHub 令牌');return;}
+    var b64=btoa(unescape(encodeURIComponent(JSON.stringify(state,null,2))));
+    var api='https://api.github.com/repos/Tidal-999/daxinganling-travel/contents/data.json';
+    fetch(api,{headers:{Authorization:'token '+token,Accept:'application/vnd.github+json'}})
+    .then(function(r){if(!r.ok)throw new Error('令牌无效或无权访问该仓库');return r.json();})
+    .then(function(meta){
+      return fetch(api,{method:'PUT',headers:{Authorization:'token '+token,'Content-Type':'application/json'},
+        body:JSON.stringify({message:'行程同步 '+new Date().toLocaleString('zh-CN',{hour12:false}),content:b64,sha:meta.sha})});
+    })
+    .then(function(r){if(!r.ok)throw new Error('提交失败（'+(r.status===409?'文件刚被改动，请重试':r.status)+'）');return r.json();})
+    .then(function(){toast('✅ 已同步！约1分钟后所有人打开网址即新版');$id('mask').classList.remove('show');})
+    .catch(function(e){toast('同步失败：'+e.message);});
+  });
+  $id('gh-token').addEventListener('input',function(){try{localStorage.setItem('csl_gh_token',this.value);}catch(e){}});
   $id('act-reset').addEventListener('click',function(){
     if(confirm('确定恢复为默认攻略？当前所有修改将被清空。')){
       state=JSON.parse(JSON.stringify(DEFAULT));save();render();
@@ -478,6 +920,7 @@ function wire(){
     else if(act==='additem')addItem(di);
     else if(act==='delday'){if(confirm('删除这一天？'))delDay(di);}
     else if(act==='addday')addDay();
+    else if(act==='daydone'){state.days[di].done=!state.days[di].done;save();render();}
     else if(act==='bk'){state.bookings[ii].done=t.checked;save();render();}
     else if(act==='bkurg'){state.bookings[ii].urgent=!state.bookings[ii].urgent;save();render();}
     else if(act==='bkdel'){state.bookings.splice(ii,1);save();render();}
@@ -522,6 +965,20 @@ render();
 if('serviceWorker' in navigator && location.protocol.indexOf('http')===0){
   navigator.serviceWorker.register('sw.js').catch(function(){});
 }
+function seedOnline(){
+  return fetch('data.json?'+Date.now()).then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(d){
+    if(!d||!d.meta||!d.days)throw 0;
+    var had=false;try{had=!!localStorage.getItem(KEY);}catch(e){}
+    if(had)return;
+    state=JSON.parse(JSON.stringify(d));
+    if(!state.map)state.map=JSON.parse(JSON.stringify(DEFAULT.map));
+    try{save();}catch(e){}
+    render();
+  }).catch(function(){});
+}
+seedOnline();
+cloudPull();
+setInterval(cloudPull,60000);
 })();
 </script>
 </body>
