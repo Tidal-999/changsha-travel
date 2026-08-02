@@ -190,7 +190,7 @@
 <script>
 (function(){
 'use strict';
-var KEY='csl-travel-app-v1';
+var KEY='csl-app-changsha-v1';
 var CLOUD='https://jsonblob.com/api/jsonBlob/019fc354-7e68-772f-90c9-b161c53a6a13';
 
 var DEFAULT=
@@ -542,7 +542,7 @@ function persist(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e)
 function save(){persist();if(cloudTimer)clearTimeout(cloudTimer);cloudTimer=setTimeout(cloudPush,3000);}
 var lastCloudErr=0;
 function setSync(txt,cls){var b=$id('sync-badge');if(!b)return;b.textContent=txt;b.className='syncbadge'+(cls?' '+cls:'');}
-function markLm(r){try{var lm=r.headers.get('Last-Modified');if(lm)localStorage.setItem('csl_lm',lm);}catch(e){}}
+function markLm(r){try{var lm=r.headers.get('Last-Modified');if(lm)localStorage.setItem('csl_lm_changsha',lm);}catch(e){}}
 function cloudPush(){
   cloudTimer=null;
   try{state.meta.syncAt=Date.now();persist();}catch(e){}
@@ -566,13 +566,13 @@ function cloudPull(force){
   return fetch(CLOUD,{cache:'no-store'}).then(function(r){if(!r.ok)throw 0;var lm=r.headers.get('Last-Modified');return r.json().then(function(d){return {d:d,lm:lm};});}).then(function(o){
     var d=o.d;if(!d||!d.meta||!d.days)throw 0;
     var ae=document.activeElement;if(!force&&ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA'||ae.tagName==='SELECT'))return;
-    var stored=null;try{stored=localStorage.getItem('csl_lm');}catch(e){}
+    var stored=null;try{stored=localStorage.getItem('csl_lm_changsha');}catch(e){}
     var mine=state.meta.syncAt||0,theirs=d.meta.syncAt||0;
     if(force||(o.lm&&(!stored||o.lm>stored))||theirs>mine){
       state=JSON.parse(JSON.stringify(d));
       if(!state.map)state.map=JSON.parse(JSON.stringify(DEFAULT.map));
       persist();
-      if(o.lm){try{localStorage.setItem('csl_lm',o.lm);}catch(e){}}
+      if(o.lm){try{localStorage.setItem('csl_lm_changsha',o.lm);}catch(e){}}
       render();
       if(force)toast('✅ 已更新为云端最新版');
     }else if(force){toast('已是最新版本');}
@@ -891,7 +891,7 @@ function wire(){
     var token=($id('gh-token').value||'').trim();
     if(!token){toast('请先在上方输入 GitHub 令牌');return;}
     var b64=btoa(unescape(encodeURIComponent(JSON.stringify(state,null,2))));
-    var api='https://api.github.com/repos/Tidal-999/daxinganling-travel/contents/data.json';
+    var api='https://api.github.com/repos/Tidal-999/changsha-travel/contents/data.json';
     fetch(api,{headers:{Authorization:'token '+token,Accept:'application/vnd.github+json'}})
     .then(function(r){if(!r.ok)throw new Error('令牌无效或无权访问该仓库');return r.json();})
     .then(function(meta){
