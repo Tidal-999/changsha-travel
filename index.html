@@ -159,7 +159,7 @@
 var KEY='csl-travel-app-v1';
 
 var DEFAULT={
-  meta:{title:'安庆→长沙 自驾3天2晚',sub:'8月8日(六) 14:00 出发 · 8月10日(一) 晚到家'},
+  meta:{title:'安庆→长沙 自驾3天2晚',sub:'8月8日(六) 14:00 出发 · 8月10日(一) 晚到家',alert:'⚠️ <b>今晚 8/2 20:00</b> 抢湖南博物院 8/9 门票（免费·提前7天放票·周一闭馆）'},
   transport:{
     outbound:{title:'去程 · 8/8 下午2点出发',lines:[
       '14:00 安庆出发（检查车况、加满油、ETC正常）',
@@ -173,7 +173,7 @@ var DEFAULT={
       '18:30 服务区晚餐休息',
       '约21:30~22:00 抵达安庆'
     ],note:'同线路约8.5h含休息 · 两人轮换开车 · 夜间高速注意安全'},
-    route:'安庆 → 合安高速/沪渝高速 → 武汉绕城 → 京港澳高速(G4) → 长沙'
+    route:'安庆 → 合安高速/沪渝高速 → 武汉绕城 → 京港澳高速(G4) → 长沙',compareTitle:'💡 自驾 vs 高铁',compareLines:['自驾：整车往返约1500元（油费+过路费），单程8.5h，胜在自由','高铁：每人往返约700元，单程仅4h（需南昌西/武汉中转），胜在省时'],compareNote:'返程若太累，可考虑在长沙还车后坐高铁回（适合异地还车）'
   },
   days:[
     {id:'d1',name:'DAY 1',date:'8月8日 · 周六',tagline:'出发日',theme:'自驾8.5h → 深夜抵达',cls:'d1',items:[
@@ -261,10 +261,10 @@ function renderTrip(){
       +'<input class="inp" data-meta="title" value="'+esc(state.meta.title)+'" placeholder="攻略标题">'
       +'<input class="inp" data-meta="sub" value="'+esc(state.meta.sub)+'" placeholder="副标题"></div></div>';
   }
-  h+='<div class="kpi"><div class="card"><div class="n">3</div><div class="l">天行程</div></div>'
+  h+='<div class="kpi"><div class="card"><div class="n">'+state.days.length+'</div><div class="l">天行程</div></div>'
     +'<div class="card"><div class="n">'+countItems()+'</div><div class="l">个安排</div></div>'
     +'<div class="card"><div class="n">'+state.bookings.filter(function(b){return !b.done;}).length+'</div><div class="l">待办</div></div></div>';
-  h+='<div class="urgent"><b>⚠️ 今晚 8/2 20:00 抢湖南博物院 8/9 门票</b>（免费·提前7天放票·周一闭馆）</div>';
+  if(state.meta.alert)h+='<div class="urgent">'+state.meta.alert+'</div>';
   state.days.forEach(function(d,di){
     h+='<div class="day"><div class="day-head '+d.cls+'"><div><div class="dt">'+esc(d.name)+'</div><div class="ds">'+esc(d.date)+' · '+esc(d.tagline)+'</div></div>'
       +'<div class="theme">'+esc(d.theme)+'</div></div>';
@@ -329,10 +329,10 @@ function renderTransport(){
   if(editing){h+='<textarea class="inp ta" data-tr="route" data-f="lines">'+esc(state.transport.route)+'</textarea>';}
   else{h+='<div class="row"><span>'+esc(state.transport.route)+'</span></div>';}
   h+='</div>';
-  h+='<div class="card"><h3>💡 自驾 vs 高铁</h3>'
-    +'<div class="row"><span>自驾：整车往返约1500元（油费+过路费），单程8.5h，胜在自由</span></div>'
-    +'<div class="row"><span>高铁：每人往返约700元，单程仅4h（需南昌西/武汉中转），胜在省时</span></div>'
-    +'<div class="note">返程若太累，可考虑在长沙还车后坐高铁回（适合异地还车）</div></div>';
+  h+='<div class="card"><h3>'+esc(state.transport.compareTitle)+'</h3>';
+    state.transport.compareLines.forEach(function(l){h+='<div class="row"><span>'+esc(l)+'</span></div>';});
+    if(state.transport.compareNote)h+='<div class="note">'+esc(state.transport.compareNote)+'</div>';
+    h+='</div>';
   $id('main').innerHTML=h;
 }
 
@@ -448,7 +448,7 @@ function wire(){
   $id('act-export').addEventListener('click',function(){
     var blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
     var a=document.createElement('a');a.href=URL.createObjectURL(blob);
-    a.download='长沙自驾攻略备份.json';a.click();URL.revokeObjectURL(a.href);
+    a.download=(state.meta.title||'旅游攻略').replace(/[\\/:*?"<>|]/g,'-')+'备份.json';a.click();URL.revokeObjectURL(a.href);
     toast('已导出备份文件');$id('mask').classList.remove('show');
   });
   $id('act-import').addEventListener('click',function(){$id('file-import').click();$id('mask').classList.remove('show');});
